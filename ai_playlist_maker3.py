@@ -16,8 +16,6 @@ except KeyError:
 
 # Nastavení práv a pokus o načtení tokenu
 SCOPE = "user-library-read user-top-read playlist-modify-private"
-sp: spotipy.Spotify | None = None
-user_name = None
 
 def authorize_spotify():
     try:
@@ -42,12 +40,12 @@ def authorize_spotify():
 # --- Definice Funkcí (Logika Playlistu) ---
 
 # Funkce pro načtení semen (vašich top skladeb)
-def get_user_seeds(limit=10):
+def get_user_seeds(sp:spotipy.Spotify, limit=10):
     results = sp.current_user_top_tracks(limit=limit, time_range='long_term')
     return results['items']
 
 # Funkce pro rozšíření kandidátů
-def expand_candidates_from_seed_tracks(seeds, per_seed=5):
+def expand_candidates_from_seed_tracks(sp:spotipy.Spotify, seeds, per_seed=5):
     candidates = []
     for t in seeds:
         artist = t['artists'][0]['name']
@@ -75,7 +73,7 @@ def filter_and_rank(candidates, seeds, max_count=30):
     return filtered[:max_count]
 
 # Funkce pro tvorbu playlistu
-def create_playlist_with_tracks(name, tracks):
+def create_playlist_with_tracks(sp:spotipy.Spotify, name, tracks):
     user_id = sp.me()['id']
     # Nastavíme playlist jako soukromý (public=False)
     pl = sp.user_playlist_create(user_id, name, public=False, description="Vygenerováno pomocí AI Playlist Maker") 
@@ -110,18 +108,18 @@ def main():
             with st.spinner('Pracuji... Načítání a filtrování skladeb (může trvat delší dobu)...'):
                 try:
                     # 1. Generování skladeb
-                    seeds = get_user_seeds(limit=seed_limit)
+                    seeds = get_user_seeds(sp, limit=seed_limit)
 
                     st.info(f"Načteno {len(seeds)} oblíbených skladeb pro inspiraci. Hledám podobné kandidáty...")
 
-                    candidates = expand_candidates_from_seed_tracks(seeds, per_seed=3)
+                    candidates = expand_candidates_from_seed_tracks(sp, seeds, per_seed=3)
 
                     # 2. Filtrování
                     selected = filter_and_rank(candidates, seeds, max_count=track_limit)
 
                     # 3. Tvorba playlistu
                     if selected:
-                        create_playlist_with_tracks(name, selected)
+                        create_playlist_with_tracks(sp, name, selected)
                     else:
                         st.warning("Nebyla nalezena žádná nová doporučená skladba. Zkuste zvýšit limit 'Seeds'.")
 
