@@ -23,15 +23,20 @@ def authorize_spotify():
             scope=SCOPE,
             client_id=CLIENT_ID,
             client_secret=CLIENT_SECRET,
-            redirect_uri=REDIRECT_URI
+            redirect_uri=REDIRECT_URI,
+            show_dialog=True
         )
-        token_info = auth.get_cached_token()
-        if not token_info:
+
+        params = st.experimental_get_query_params()
+        code = params.get("code", [None])[0]
+
+        if code is None:
             auth_url = auth.get_authorize_url()
             st.markdown(f"[Klikněte zde pro přihlášení ke Spotify]({auth_url})")
-            return None
+            st.stop()
 
-        sp = spotipy.Spotify(auth_manager=auth)
+        token_info = auth.get_access_token(code)
+        sp = spotipy.Spotify(auth_manager=token_info["access_token"])
         return sp
     except Exception as e:
         st.error(f"Chyba autorizace: {e}")
