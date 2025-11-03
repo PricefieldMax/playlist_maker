@@ -36,7 +36,7 @@ def authorize_spotify():
             st.stop()
 
         token_info = auth.get_access_token(code)
-        sp = spotipy.Spotify(auth_manager=token_info["access_token"])
+        sp = spotipy.Spotify(auth=token_info["access_token"])
         return sp
     except Exception as e:
         st.error(f"Chyba autorizace: {e}")
