@@ -16,25 +16,28 @@ except KeyError:
 
 # Nastavení práv a pokus o načtení tokenu
 SCOPE = "user-library-read user-top-read playlist-modify-private"
+sp: spotipy.Spotify | None = None
+user_name = None
 
-try:
-    # Použijeme st.cache_resource, aby se objekt Spotify vytvořil jen jednou
-    @st.cache_resource
-    def get_spotify_client():
-        return spotipy.Spotify(auth_manager=SpotifyOAuth(
+def authorize_spotify():
+    try:
+        auth = SpotifyOAuth(
             scope=SCOPE,
             client_id=CLIENT_ID,
             client_secret=CLIENT_SECRET,
             redirect_uri=REDIRECT_URI
-        ))
+        )
+        token_info = auth.get_cached_token()
+        if not token_info:
+            auth_url = auth.get_authorize_url()
+            st.markdown(f"[Klikněte zde pro přihlášení ke Spotify]({auth_url})")
+            return None
 
-    sp = get_spotify_client()
-    user_name = sp.me()['display_name']
-except Exception as e:
-    # ZDE OPRAVA: PŘIDÁNÍ UVOZOVEK f"..."
-    st.warning(f"AUTORIZACE SELHALA: Ujistěte se, že jste se autorizoval/a přes full_auth.py v PowerShellu.")
-    st.stop()
-
+        sp = spotipy.Spotify(auth_manager=auth)
+        return sp
+    except Exception as e:
+        st.error(f"Chyba autorizace: {e}")
+        return None
 
 # --- Definice Funkcí (Logika Playlistu) ---
 
@@ -85,13 +88,17 @@ def create_playlist_with_tracks(name, tracks):
 # --- Hlavní Rozhraní Streamlit (Webové GUI) ---
 def main():
     st.title("AI Playlist Generator")
+    sp = authorize_spotify()
+    if not sp:
+        st.stop()
+
+    user_name = sp.me()["display_name"]
     st.markdown(f"**Přihlášen jako:** {user_name}")
 
     # Interaktivní vstupy
     name = st.text_input("Zadejte název nového playlistu:", value="Doporučení od Bota")
     track_limit = st.slider("Počet doporučených skladeb:", min_value=10, max_value=100, value=30, step=5)
     seed_limit = st.slider("Počet vašich TOP skladeb pro inspiraci (Seeds):", min_value=5, max_value=20, value=10, step=1)
-
 
     # Tlačítko pro spuštění celého procesu
     if st.button('VYTVOŘIT PLAYLIST!'):
