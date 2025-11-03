@@ -35,8 +35,8 @@ def authorize_spotify():
             st.markdown(f"[Klikněte zde pro přihlášení ke Spotify]({auth_url})")
             st.stop()
 
-        token_info = auth.get_access_token(code)
-        sp = spotipy.Spotify(auth=token_info["access_token"])
+        auth.get_access_token(code)
+        sp = spotipy.Spotify(auth_manager=auth)
         return sp
     except Exception as e:
         st.error(f"Chyba autorizace: {e}")
