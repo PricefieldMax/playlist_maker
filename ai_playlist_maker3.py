@@ -83,40 +83,43 @@ def create_playlist_with_tracks(name, tracks):
     return pl
 
 # --- Hlavní Rozhraní Streamlit (Webové GUI) ---
+def main():
+    st.title("AI Playlist Generator")
+    st.markdown(f"**Přihlášen jako:** {user_name}")
 
-st.title("AI Playlist Generator")
-st.markdown(f"**Přihlášen jako:** {user_name}")
-
-# Interaktivní vstupy
-name = st.text_input("Zadejte název nového playlistu:", value="Doporučení od Bota")
-track_limit = st.slider("Počet doporučených skladeb:", min_value=10, max_value=100, value=30, step=5)
-seed_limit = st.slider("Počet vašich TOP skladeb pro inspiraci (Seeds):", min_value=5, max_value=20, value=10, step=1)
+    # Interaktivní vstupy
+    name = st.text_input("Zadejte název nového playlistu:", value="Doporučení od Bota")
+    track_limit = st.slider("Počet doporučených skladeb:", min_value=10, max_value=100, value=30, step=5)
+    seed_limit = st.slider("Počet vašich TOP skladeb pro inspiraci (Seeds):", min_value=5, max_value=20, value=10, step=1)
 
 
-# Tlačítko pro spuštění celého procesu
-if st.button('VYTVOŘIT PLAYLIST!'):
-    
-    if not name:
-        st.warning("Zadejte prosím název playlistu.")
-    else:
-        # Použití Streamlit spinner pro zobrazení průběhu
-        with st.spinner('Pracuji... Načítání a filtrování skladeb (může trvat delší dobu)...'):
-            try:
-                # 1. Generování skladeb
-                seeds = get_user_seeds(limit=seed_limit)
-                
-                st.info(f"Načteno {len(seeds)} oblíbených skladeb pro inspiraci. Hledám podobné kandidáty...")
-                
-                candidates = expand_candidates_from_seed_tracks(seeds, per_seed=3)
-                
-                # 2. Filtrování
-                selected = filter_and_rank(candidates, seeds, max_count=track_limit)
+    # Tlačítko pro spuštění celého procesu
+    if st.button('VYTVOŘIT PLAYLIST!'):
 
-                # 3. Tvorba playlistu
-                if selected:
-                    create_playlist_with_tracks(name, selected)
-                else:
-                    st.warning("Nebyla nalezena žádná nová doporučená skladba. Zkuste zvýšit limit 'Seeds'.")
+        if not name:
+            st.warning("Zadejte prosím název playlistu.")
+        else:
+            # Použití Streamlit spinner pro zobrazení průběhu
+            with st.spinner('Pracuji... Načítání a filtrování skladeb (může trvat delší dobu)...'):
+                try:
+                    # 1. Generování skladeb
+                    seeds = get_user_seeds(limit=seed_limit)
 
-            except Exception as e:
-                st.error(f"Při generování playlistu nastala chyba: {e}")
+                    st.info(f"Načteno {len(seeds)} oblíbených skladeb pro inspiraci. Hledám podobné kandidáty...")
+
+                    candidates = expand_candidates_from_seed_tracks(seeds, per_seed=3)
+
+                    # 2. Filtrování
+                    selected = filter_and_rank(candidates, seeds, max_count=track_limit)
+
+                    # 3. Tvorba playlistu
+                    if selected:
+                        create_playlist_with_tracks(name, selected)
+                    else:
+                        st.warning("Nebyla nalezena žádná nová doporučená skladba. Zkuste zvýšit limit 'Seeds'.")
+
+                except Exception as e:
+                    st.error(f"Při generování playlistu nastala chyba: {e}")
+
+if __name__ == "__main__":
+    main()
